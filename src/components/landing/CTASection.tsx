@@ -17,13 +17,6 @@ const roles = [
     href: "/auth?mode=signup&role=buyer",
     buttonText: "Start Buying",
   },
-  {
-    icon: Store,
-    title: "I'm a Retailer",
-    description: "Buy in bulk directly from farmers with negotiated prices.",
-    href: "/retailer/register",
-    buttonText: "Partner With Us",
-  },
 ];
 
 export function CTASection() {
