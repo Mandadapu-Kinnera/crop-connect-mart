@@ -6,7 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -25,6 +24,9 @@ import {
   Clock,
   AlertCircle,
   IndianRupee,
+  User,
+  Mail,
+  Phone,
 } from "lucide-react";
 
 // Mock data
@@ -34,27 +36,57 @@ const mockProducts = [
 ];
 
 const mockOrders = [
-  { id: "1", order_number: "ORD-001", total_amount: 400, status: "delivered", created_at: new Date().toISOString() },
-  { id: "2", order_number: "ORD-002", total_amount: 1200, status: "pending", created_at: new Date().toISOString() },
+  { id: "1", order_number: "ORD-001", total_amount: 400, status: "delivered", created_at: new Date().toISOString(), buyer_name: "Rahul Sharma", items: ["Fresh Tomatoes x 10kg"] },
+  { id: "2", order_number: "ORD-002", total_amount: 1200, status: "pending", created_at: new Date().toISOString(), buyer_name: "Priya Patel", items: ["Organic Rice x 15kg"] },
 ];
 
-function SidebarLink({ icon: Icon, label, active, count, href }: { icon: any; label: string; active?: boolean; count?: number; href?: string }) {
-  const content = (
-    <div className={`flex items-center justify-between px-4 py-2.5 rounded-lg cursor-pointer transition-colors ${active ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>
+const mockClients = [
+  { id: "1", name: "Rahul Sharma", email: "rahul@example.com", phone: "+91 98765 43210", orders: 5, total_spent: 2500 },
+  { id: "2", name: "Priya Patel", email: "priya@example.com", phone: "+91 87654 32109", orders: 3, total_spent: 1800 },
+  { id: "3", name: "Amit Kumar", email: "amit@example.com", phone: "+91 76543 21098", orders: 8, total_spent: 4200 },
+];
+
+const mockMessages = [
+  { id: "1", sender: "Rahul Sharma", message: "When will my order be delivered?", time: "2 hours ago", unread: true },
+  { id: "2", sender: "Priya Patel", message: "Do you have organic mangoes?", time: "5 hours ago", unread: true },
+  { id: "3", sender: "Amit Kumar", message: "Thank you for the fresh vegetables!", time: "1 day ago", unread: false },
+];
+
+const mockHistory = [
+  { id: "1", action: "Order Delivered", details: "ORD-001 delivered to Rahul Sharma", date: new Date().toISOString() },
+  { id: "2", action: "Product Added", details: "Added Fresh Tomatoes to listings", date: new Date(Date.now() - 86400000).toISOString() },
+  { id: "3", action: "Order Received", details: "New order ORD-002 from Priya Patel", date: new Date(Date.now() - 172800000).toISOString() },
+];
+
+type ActiveView = "services" | "orders" | "clients" | "messages" | "history" | "settings";
+
+function SidebarLink({ 
+  icon: Icon, 
+  label, 
+  active, 
+  count, 
+  onClick 
+}: { 
+  icon: any; 
+  label: string; 
+  active?: boolean; 
+  count?: number; 
+  onClick?: () => void;
+}) {
+  return (
+    <div 
+      className={`flex items-center justify-between px-4 py-2.5 rounded-lg cursor-pointer transition-colors ${active ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+      onClick={onClick}
+    >
       <div className="flex items-center gap-3">
         <Icon className="w-5 h-5" />
         <span className="font-medium">{label}</span>
       </div>
       {count !== undefined && count > 0 && (
-        <Badge variant="secondary" className="h-5 px-2">{count}</Badge>
+        <Badge variant={active ? "secondary" : "secondary"} className="h-5 px-2">{count}</Badge>
       )}
     </div>
   );
-
-  if (href) {
-    return <Link to={href}>{content}</Link>;
-  }
-  return content;
 }
 
 export default function FarmerDashboard() {
@@ -64,8 +96,12 @@ export default function FarmerDashboard() {
   
   const [products, setProducts] = useState(mockProducts);
   const [orders] = useState(mockOrders);
+  const [clients] = useState(mockClients);
+  const [messages] = useState(mockMessages);
+  const [history] = useState(mockHistory);
   const [loading, setLoading] = useState(false);
   const [addProductOpen, setAddProductOpen] = useState(false);
+  const [activeView, setActiveView] = useState<ActiveView>("services");
   
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -175,6 +211,373 @@ export default function FarmerDashboard() {
     .reduce((sum, o) => sum + o.total_amount, 0);
   const pendingOrders = orders.filter((o) => o.status === "pending").length;
   const activeProducts = products.filter((p) => p.is_active).length;
+  const unreadMessages = messages.filter((m) => m.unread).length;
+
+  const renderContent = () => {
+    switch (activeView) {
+      case "orders":
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Orders</h2>
+            {orders.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <ShoppingCart className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No orders yet</p>
+                </CardContent>
+              </Card>
+            ) : (
+              orders.map((order) => (
+                <Card key={order.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <p className="font-medium">{order.order_number}</p>
+                        <p className="text-sm text-muted-foreground">{order.buyer_name}</p>
+                      </div>
+                      <Badge variant={order.status === "delivered" ? "success" : "secondary"}>
+                        {order.status}
+                      </Badge>
+                    </div>
+                    <div className="text-sm text-muted-foreground mb-2">
+                      {order.items.join(", ")}
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span>₹{order.total_amount}</span>
+                      <span className="text-muted-foreground">{new Date(order.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        );
+
+      case "clients":
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">My Clients</h2>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {clients.map((client) => (
+                <Card key={client.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        <User className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">{client.name}</h3>
+                        <p className="text-sm text-muted-foreground">{client.orders} orders</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Mail className="w-4 h-4" />
+                        {client.email}
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Phone className="w-4 h-4" />
+                        {client.phone}
+                      </div>
+                      <div className="flex justify-between pt-2 border-t">
+                        <span className="text-muted-foreground">Total Spent</span>
+                        <span className="font-medium text-primary">₹{client.total_spent}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        );
+
+      case "messages":
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Messages</h2>
+            {messages.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No messages yet</p>
+                </CardContent>
+              </Card>
+            ) : (
+              messages.map((msg) => (
+                <Card key={msg.id} className={msg.unread ? "border-primary/50" : ""}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <User className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold">{msg.sender}</h3>
+                            {msg.unread && <Badge variant="destructive" className="h-5">New</Badge>}
+                          </div>
+                          <p className="text-sm text-muted-foreground">{msg.message}</p>
+                        </div>
+                      </div>
+                      <span className="text-xs text-muted-foreground">{msg.time}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        );
+
+      case "history":
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Activity History</h2>
+            <div className="space-y-3">
+              {history.map((item) => (
+                <Card key={item.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{item.action}</p>
+                        <p className="text-sm text-muted-foreground">{item.details}</p>
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(item.date).toLocaleDateString()}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        );
+
+      case "settings":
+        return (
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold">Settings</h2>
+            <Card>
+              <CardHeader>
+                <CardTitle>Profile Settings</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Full Name</Label>
+                    <Input defaultValue={user?.user_metadata?.full_name || ""} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Email</Label>
+                    <Input defaultValue={user?.email || ""} disabled />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Phone</Label>
+                    <Input placeholder="+91 XXXXX XXXXX" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Farm Name</Label>
+                    <Input placeholder="Your farm name" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Farm Address</Label>
+                  <Textarea placeholder="Enter your farm address" />
+                </div>
+                <Button>Save Changes</Button>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      default:
+        return (
+          <>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total Earnings</p>
+                      <p className="text-2xl font-bold">₹{totalEarnings.toLocaleString()}</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                      <IndianRupee className="w-6 h-6 text-green-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Active Products</p>
+                      <p className="text-2xl font-bold">{activeProducts}</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                      <Package className="w-6 h-6 text-blue-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Pending Orders</p>
+                      <p className="text-2xl font-bold">{pendingOrders}</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
+                      <Clock className="w-6 h-6 text-yellow-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Total Orders</p>
+                      <p className="text-2xl font-bold">{orders.length}</p>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
+                      <ShoppingCart className="w-6 h-6 text-purple-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Products */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold">My Products</h2>
+                <Dialog open={addProductOpen} onOpenChange={setAddProductOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Product
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Add New Product</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label>Product Name</Label>
+                        <Input
+                          value={newProduct.name}
+                          onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                          placeholder="e.g., Fresh Tomatoes"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Description</Label>
+                        <Textarea
+                          value={newProduct.description}
+                          onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+                          placeholder="Describe your product..."
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Category</Label>
+                          <select
+                            className="w-full h-10 px-3 border rounded-md bg-background"
+                            value={newProduct.category}
+                            onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
+                          >
+                            <option>Vegetables</option>
+                            <option>Fruits</option>
+                            <option>Grains</option>
+                            <option>Dairy</option>
+                            <option>Spices</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Unit</Label>
+                          <select
+                            className="w-full h-10 px-3 border rounded-md bg-background"
+                            value={newProduct.unit}
+                            onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value })}
+                          >
+                            <option>kg</option>
+                            <option>dozen</option>
+                            <option>piece</option>
+                            <option>litre</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Price (₹)</Label>
+                          <Input
+                            type="number"
+                            value={newProduct.price}
+                            onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+                            placeholder="0"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Quantity Available</Label>
+                          <Input
+                            type="number"
+                            value={newProduct.quantity_available}
+                            onChange={(e) => setNewProduct({ ...newProduct, quantity_available: e.target.value })}
+                            placeholder="0"
+                          />
+                        </div>
+                      </div>
+                      <Button className="w-full" onClick={handleAddProduct}>
+                        Add Product
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              {products.length === 0 ? (
+                <Card>
+                  <CardContent className="py-12 text-center">
+                    <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                    <p className="text-muted-foreground mb-4">No products listed yet</p>
+                    <Button onClick={() => setAddProductOpen(true)}>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Your First Product
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {products.map((product) => (
+                    <Card key={product.id}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div>
+                            <h3 className="font-semibold">{product.name}</h3>
+                            <p className="text-sm text-muted-foreground">{product.category}</p>
+                          </div>
+                          <Badge variant={product.is_active ? "success" : "secondary"}>
+                            {product.is_active ? "Active" : "Inactive"}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span>₹{product.price}/{product.unit}</span>
+                          <span className="text-muted-foreground">
+                            Stock: {product.quantity_available} {product.unit}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        );
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -192,13 +595,15 @@ export default function FarmerDashboard() {
         </div>
         
         <nav className="px-4 space-y-1">
-          <SidebarLink icon={Package} label="My Services" active />
-          <SidebarLink icon={ShoppingCart} label="Orders" count={pendingOrders} />
-          <SidebarLink icon={Users} label="Clients" />
-          <SidebarLink icon={MessageSquare} label="Messages" />
-          <SidebarLink icon={History} label="History" />
-          <SidebarLink icon={HelpCircle} label="Help Center" href="/help" />
-          <SidebarLink icon={Settings} label="Settings" />
+          <SidebarLink icon={Package} label="My Services" active={activeView === "services"} onClick={() => setActiveView("services")} />
+          <SidebarLink icon={ShoppingCart} label="Orders" count={pendingOrders} active={activeView === "orders"} onClick={() => setActiveView("orders")} />
+          <SidebarLink icon={Users} label="Clients" active={activeView === "clients"} onClick={() => setActiveView("clients")} />
+          <SidebarLink icon={MessageSquare} label="Messages" count={unreadMessages} active={activeView === "messages"} onClick={() => setActiveView("messages")} />
+          <SidebarLink icon={History} label="History" active={activeView === "history"} onClick={() => setActiveView("history")} />
+          <Link to="/help">
+            <SidebarLink icon={HelpCircle} label="Help Center" />
+          </Link>
+          <SidebarLink icon={Settings} label="Settings" active={activeView === "settings"} onClick={() => setActiveView("settings")} />
         </nav>
         
         <div className="absolute bottom-4 left-4 right-4">
@@ -215,238 +620,23 @@ export default function FarmerDashboard() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold mb-1">
-              Welcome, {user?.user_metadata?.full_name || "Farmer"}
+              {activeView === "services" ? `Welcome, ${user?.user_metadata?.full_name || "Farmer"}` :
+               activeView === "orders" ? "Orders" :
+               activeView === "clients" ? "My Clients" :
+               activeView === "messages" ? "Messages" :
+               activeView === "history" ? "Activity History" : "Settings"}
             </h1>
             <p className="text-muted-foreground">
-              Manage your products and orders
+              {activeView === "services" ? "Manage your products and orders" :
+               activeView === "orders" ? "View and manage your orders" :
+               activeView === "clients" ? "View your customer base" :
+               activeView === "messages" ? "Chat with your customers" :
+               activeView === "history" ? "View your activity log" : "Manage your profile"}
             </p>
           </div>
-          <Dialog open={addProductOpen} onOpenChange={setAddProductOpen}>
-            <DialogTrigger asChild>
-              <Button className="mt-4 md:mt-0">
-                <Plus className="w-4 h-4 mr-2" />
-                Add Product
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add New Product</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label>Product Name</Label>
-                  <Input
-                    value={newProduct.name}
-                    onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
-                    placeholder="e.g., Fresh Tomatoes"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <Textarea
-                    value={newProduct.description}
-                    onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
-                    placeholder="Describe your product..."
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Category</Label>
-                    <select
-                      className="w-full h-10 px-3 border rounded-md bg-background"
-                      value={newProduct.category}
-                      onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
-                    >
-                      <option>Vegetables</option>
-                      <option>Fruits</option>
-                      <option>Grains</option>
-                      <option>Dairy</option>
-                      <option>Spices</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Unit</Label>
-                    <select
-                      className="w-full h-10 px-3 border rounded-md bg-background"
-                      value={newProduct.unit}
-                      onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value })}
-                    >
-                      <option>kg</option>
-                      <option>dozen</option>
-                      <option>piece</option>
-                      <option>litre</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Price (₹)</Label>
-                    <Input
-                      type="number"
-                      value={newProduct.price}
-                      onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
-                      placeholder="0"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Quantity Available</Label>
-                    <Input
-                      type="number"
-                      value={newProduct.quantity_available}
-                      onChange={(e) => setNewProduct({ ...newProduct, quantity_available: e.target.value })}
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
-                <Button className="w-full" onClick={handleAddProduct}>
-                  Add Product
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Earnings</p>
-                  <p className="text-2xl font-bold">₹{totalEarnings.toLocaleString()}</p>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
-                  <IndianRupee className="w-6 h-6 text-green-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Active Products</p>
-                  <p className="text-2xl font-bold">{activeProducts}</p>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                  <Package className="w-6 h-6 text-blue-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Pending Orders</p>
-                  <p className="text-2xl font-bold">{pendingOrders}</p>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-yellow-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Total Orders</p>
-                  <p className="text-2xl font-bold">{orders.length}</p>
-                </div>
-                <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                  <ShoppingCart className="w-6 h-6 text-purple-600" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tabs */}
-        <Tabs defaultValue="services" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="services">My Services</TabsTrigger>
-            <TabsTrigger value="orders">Orders</TabsTrigger>
-            <TabsTrigger value="messages">Messages</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="services" className="space-y-4">
-            {products.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground mb-4">No products listed yet</p>
-                  <Button onClick={() => setAddProductOpen(true)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Your First Product
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {products.map((product) => (
-                  <Card key={product.id}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-3">
-                        <div>
-                          <h3 className="font-semibold">{product.name}</h3>
-                          <p className="text-sm text-muted-foreground">{product.category}</p>
-                        </div>
-                        <Badge variant={product.is_active ? "success" : "secondary"}>
-                          {product.is_active ? "Active" : "Inactive"}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span>₹{product.price}/{product.unit}</span>
-                        <span className="text-muted-foreground">
-                          Stock: {product.quantity_available} {product.unit}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="orders" className="space-y-4">
-            {orders.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <ShoppingCart className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No orders yet</p>
-                </CardContent>
-              </Card>
-            ) : (
-              orders.map((order) => (
-                <Card key={order.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{order.order_number}</p>
-                        <p className="text-sm text-muted-foreground">
-                          ₹{order.total_amount} • {new Date(order.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <Badge variant={order.status === "delivered" ? "success" : "secondary"}>
-                        {order.status}
-                      </Badge>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </TabsContent>
-
-          <TabsContent value="messages" className="space-y-4">
-            <Card>
-              <CardContent className="py-12 text-center">
-                <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">No messages yet</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+        {renderContent()}
       </main>
     </div>
   );
