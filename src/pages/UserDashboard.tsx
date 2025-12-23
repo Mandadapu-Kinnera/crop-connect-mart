@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGeolocation } from "@/hooks/useGeolocation";
-import { supabase } from "@/integrations/supabase/client";
 import {
   Search,
   MapPin,
@@ -17,20 +16,18 @@ import {
   Heart,
   Star,
   Package,
-  Clock,
-  CheckCircle,
-  Truck,
   Settings,
   User,
   LogOut,
   Navigation,
   Loader2,
+  CheckCircle,
 } from "lucide-react";
 import vegetablesImage from "@/assets/vegetables-basket.jpg";
 import fruitsImage from "@/assets/fruits-display.jpg";
 import riceImage from "@/assets/rice-field.jpg";
 
-// Placeholder products with coordinates
+// Mock products with coordinates
 const sampleProducts = [
   {
     id: "1",
@@ -90,6 +87,24 @@ const sampleProducts = [
   },
 ];
 
+// Mock orders
+const mockOrders = [
+  {
+    id: "1",
+    order_number: "ORD-001",
+    status: "delivered",
+    total_amount: 450,
+    created_at: new Date().toISOString(),
+  },
+  {
+    id: "2",
+    order_number: "ORD-002",
+    status: "pending",
+    total_amount: 280,
+    created_at: new Date().toISOString(),
+  },
+];
+
 export default function UserDashboard() {
   const { user, userRole, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -97,33 +112,13 @@ export default function UserDashboard() {
   
   const [searchQuery, setSearchQuery] = useState("");
   const [showNearby, setShowNearby] = useState(false);
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders] = useState(mockOrders);
 
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
     }
   }, [user, authLoading, navigate]);
-
-  useEffect(() => {
-    if (user) {
-      fetchOrders();
-    }
-  }, [user]);
-
-  const fetchOrders = async () => {
-    if (!user) return;
-    
-    const { data, error } = await supabase
-      .from("orders")
-      .select("*, order_items(*)")
-      .eq("buyer_id", user.id)
-      .order("created_at", { ascending: false });
-    
-    if (!error && data) {
-      setOrders(data);
-    }
-  };
 
   const handleNearMeClick = () => {
     if (!hasLocation) {
@@ -145,7 +140,7 @@ export default function UserDashboard() {
         product.farmer_name.toLowerCase().includes(searchQuery.toLowerCase());
       
       if (showNearby && hasLocation) {
-        return matchesSearch && product.distance !== null && product.distance < 100; // Within 100km
+        return matchesSearch && product.distance !== null && product.distance < 100;
       }
       return matchesSearch;
     })
@@ -186,7 +181,7 @@ export default function UserDashboard() {
               </p>
             </div>
             <div className="flex gap-3 mt-4 md:mt-0">
-              <Button variant="outline" size="sm" onClick={() => navigate("/settings")}>
+              <Button variant="outline" size="sm">
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
               </Button>

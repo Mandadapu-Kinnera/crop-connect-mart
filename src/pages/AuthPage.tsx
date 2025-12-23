@@ -136,6 +136,16 @@ export default function AuthPage() {
               </Button>
             </form>
 
+            {/* Demo credentials info */}
+            {isLogin && (
+              <div className="mt-4 p-3 bg-muted rounded-lg text-sm">
+                <p className="font-medium mb-2">Demo Credentials:</p>
+                <p className="text-muted-foreground">Admin: admin@agrimart.com / admin123</p>
+                <p className="text-muted-foreground">Farmer: farmer@agrimart.com / farmer123</p>
+                <p className="text-muted-foreground">User: user@agrimart.com / user123</p>
+              </div>
+            )}
+
             <div className="mt-6 text-center text-sm">
               {isLogin ? (
                 <>Don't have an account? <button onClick={() => setIsLogin(false)} className="text-primary font-medium hover:underline">Sign up</button></>

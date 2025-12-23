@@ -1,12 +1,19 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { User, Session } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
+import { createContext, useContext, useState, ReactNode } from "react";
 
 type AppRole = "admin" | "user" | "farmer";
 
+interface MockUser {
+  id: string;
+  email: string;
+  user_metadata: {
+    full_name: string;
+    role: AppRole;
+  };
+}
+
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: MockUser | null;
+  session: any;
   userRole: AppRole | null;
   loading: boolean;
   signUp: (email: string, password: string, fullName: string, role?: AppRole) => Promise<{ error: Error | null }>;
@@ -18,93 +25,80 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Mock user storage (in-memory for demo)
+const mockUsers: Map<string, { password: string; user: MockUser; role: AppRole; farmerStatus?: string }> = new Map();
+
+// Add a demo admin user
+mockUsers.set("admin@agrimart.com", {
+  password: "admin123",
+  user: {
+    id: "admin-001",
+    email: "admin@agrimart.com",
+    user_metadata: { full_name: "Admin User", role: "admin" },
+  },
+  role: "admin",
+});
+
+// Add a demo farmer user
+mockUsers.set("farmer@agrimart.com", {
+  password: "farmer123",
+  user: {
+    id: "farmer-001",
+    email: "farmer@agrimart.com",
+    user_metadata: { full_name: "Demo Farmer", role: "farmer" },
+  },
+  role: "farmer",
+  farmerStatus: "approved",
+});
+
+// Add a demo regular user
+mockUsers.set("user@agrimart.com", {
+  password: "user123",
+  user: {
+    id: "user-001",
+    email: "user@agrimart.com",
+    user_metadata: { full_name: "Demo User", role: "user" },
+  },
+  role: "user",
+});
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<MockUser | null>(null);
+  const [session, setSession] = useState<any>(null);
   const [userRole, setUserRole] = useState<AppRole | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [isApprovedFarmer, setIsApprovedFarmer] = useState(false);
   const [farmerStatus, setFarmerStatus] = useState<string | null>(null);
 
-  const fetchUserRole = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId)
-        .maybeSingle();
-      
-      if (error) throw error;
-      setUserRole(data?.role as AppRole || "user");
-      
-      // Check farmer approval status
-      if (data?.role === "farmer") {
-        const { data: farmerData } = await supabase
-          .from("farmer_profiles")
-          .select("approval_status")
-          .eq("user_id", userId)
-          .maybeSingle();
-        
-        setFarmerStatus(farmerData?.approval_status || null);
-        setIsApprovedFarmer(farmerData?.approval_status === "approved");
-      }
-    } catch (error) {
-      console.error("Error fetching user role:", error);
-      setUserRole("user");
-    }
-  };
-
-  useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Defer Supabase calls with setTimeout
-          setTimeout(() => {
-            fetchUserRole(session.user.id);
-          }, 0);
-        } else {
-          setUserRole(null);
-          setIsApprovedFarmer(false);
-          setFarmerStatus(null);
-        }
-        setLoading(false);
-      }
-    );
-
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchUserRole(session.user.id);
-      }
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
   const signUp = async (email: string, password: string, fullName: string, role: AppRole = "user") => {
     try {
-      const redirectUrl = `${window.location.origin}/`;
+      if (mockUsers.has(email)) {
+        throw new Error("User already exists");
+      }
       
-      const { error } = await supabase.auth.signUp({
+      const newUser: MockUser = {
+        id: `user-${Date.now()}`,
         email,
+        user_metadata: { full_name: fullName, role },
+      };
+      
+      mockUsers.set(email, {
         password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            full_name: fullName,
-            role: role,
-          },
-        },
+        user: newUser,
+        role,
+        farmerStatus: role === "farmer" ? "pending" : undefined,
       });
       
-      if (error) throw error;
+      // Auto login after signup
+      setUser(newUser);
+      setSession({ user: newUser });
+      setUserRole(role);
+      
+      if (role === "farmer") {
+        setFarmerStatus("pending");
+        setIsApprovedFarmer(false);
+      }
+      
       return { error: null };
     } catch (error) {
       return { error: error as Error };
@@ -113,12 +107,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const userData = mockUsers.get(email);
       
-      if (error) throw error;
+      if (!userData || userData.password !== password) {
+        throw new Error("Invalid email or password");
+      }
+      
+      setUser(userData.user);
+      setSession({ user: userData.user });
+      setUserRole(userData.role);
+      
+      if (userData.role === "farmer") {
+        setFarmerStatus(userData.farmerStatus || "pending");
+        setIsApprovedFarmer(userData.farmerStatus === "approved");
+      }
+      
       return { error: null };
     } catch (error) {
       return { error: error as Error };
@@ -126,7 +129,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     setUserRole(null);

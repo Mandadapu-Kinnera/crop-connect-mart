@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
   Leaf,
@@ -23,22 +22,49 @@ import {
   Plus,
   Loader2,
   LogOut,
-  TrendingUp,
   Clock,
-  CheckCircle,
   AlertCircle,
   IndianRupee,
 } from "lucide-react";
+
+// Mock data
+const mockProducts = [
+  { id: "1", name: "Fresh Tomatoes", category: "Vegetables", price: 40, unit: "kg", quantity_available: 100, is_active: true },
+  { id: "2", name: "Organic Rice", category: "Grains", price: 80, unit: "kg", quantity_available: 500, is_active: true },
+];
+
+const mockOrders = [
+  { id: "1", order_number: "ORD-001", total_amount: 400, status: "delivered", created_at: new Date().toISOString() },
+  { id: "2", order_number: "ORD-002", total_amount: 1200, status: "pending", created_at: new Date().toISOString() },
+];
+
+function SidebarLink({ icon: Icon, label, active, count, href }: { icon: any; label: string; active?: boolean; count?: number; href?: string }) {
+  const content = (
+    <div className={`flex items-center justify-between px-4 py-2.5 rounded-lg cursor-pointer transition-colors ${active ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>
+      <div className="flex items-center gap-3">
+        <Icon className="w-5 h-5" />
+        <span className="font-medium">{label}</span>
+      </div>
+      {count !== undefined && count > 0 && (
+        <Badge variant="secondary" className="h-5 px-2">{count}</Badge>
+      )}
+    </div>
+  );
+
+  if (href) {
+    return <Link to={href}>{content}</Link>;
+  }
+  return content;
+}
 
 export default function FarmerDashboard() {
   const { user, signOut, isApprovedFarmer, farmerStatus, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [products, setProducts] = useState<any[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
-  const [messages, setMessages] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState(mockProducts);
+  const [orders] = useState(mockOrders);
+  const [loading, setLoading] = useState(false);
   const [addProductOpen, setAddProductOpen] = useState(false);
   
   const [newProduct, setNewProduct] = useState({
@@ -56,84 +82,31 @@ export default function FarmerDashboard() {
     }
   }, [user, authLoading, navigate]);
 
-  useEffect(() => {
-    if (user && isApprovedFarmer) {
-      fetchData();
-    } else {
-      setLoading(false);
-    }
-  }, [user, isApprovedFarmer]);
-
-  const fetchData = async () => {
-    if (!user) return;
-    setLoading(true);
-    
-    // Fetch products
-    const { data: productsData } = await supabase
-      .from("products")
-      .select("*")
-      .eq("farmer_id", user.id)
-      .order("created_at", { ascending: false });
-    
-    if (productsData) setProducts(productsData);
-    
-    // Fetch orders
-    const { data: ordersData } = await supabase
-      .from("orders")
-      .select("*, order_items(*)")
-      .eq("farmer_id", user.id)
-      .order("created_at", { ascending: false });
-    
-    if (ordersData) setOrders(ordersData);
-    
-    // Fetch messages
-    const { data: messagesData } = await supabase
-      .from("messages")
-      .select("*")
-      .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-      .order("created_at", { ascending: false })
-      .limit(10);
-    
-    if (messagesData) setMessages(messagesData);
-    
-    setLoading(false);
-  };
-
-  const handleAddProduct = async () => {
-    if (!user) return;
-    
-    const { error } = await supabase.from("products").insert({
-      farmer_id: user.id,
+  const handleAddProduct = () => {
+    const product = {
+      id: String(Date.now()),
       name: newProduct.name,
-      description: newProduct.description,
       category: newProduct.category,
       price: parseFloat(newProduct.price),
       unit: newProduct.unit,
       quantity_available: parseFloat(newProduct.quantity_available),
-    });
+      is_active: true,
+    };
     
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to add product. Please try again.",
-        variant: "destructive",
-      });
-    } else {
-      toast({
-        title: "Product Added",
-        description: "Your product has been listed successfully.",
-      });
-      setAddProductOpen(false);
-      setNewProduct({
-        name: "",
-        description: "",
-        category: "Vegetables",
-        price: "",
-        unit: "kg",
-        quantity_available: "",
-      });
-      fetchData();
-    }
+    setProducts([product, ...products]);
+    toast({
+      title: "Product Added",
+      description: "Your product has been listed successfully.",
+    });
+    setAddProductOpen(false);
+    setNewProduct({
+      name: "",
+      description: "",
+      category: "Vegetables",
+      price: "",
+      unit: "kg",
+      quantity_available: "",
+    });
   };
 
   const handleSignOut = async () => {
@@ -199,7 +172,7 @@ export default function FarmerDashboard() {
   // Calculate stats
   const totalEarnings = orders
     .filter((o) => o.status === "delivered")
-    .reduce((sum, o) => sum + parseFloat(o.total_amount), 0);
+    .reduce((sum, o) => sum + o.total_amount, 0);
   const pendingOrders = orders.filter((o) => o.status === "pending").length;
   const activeProducts = products.filter((p) => p.is_active).length;
 
@@ -466,64 +439,15 @@ export default function FarmerDashboard() {
           </TabsContent>
 
           <TabsContent value="messages" className="space-y-4">
-            {messages.length === 0 ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">No messages yet</p>
-                </CardContent>
-              </Card>
-            ) : (
-              messages.map((message) => (
-                <Card key={message.id}>
-                  <CardContent className="p-4">
-                    <p className="text-sm">{message.content}</p>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      {new Date(message.created_at).toLocaleString()}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))
-            )}
+            <Card>
+              <CardContent className="py-12 text-center">
+                <MessageSquare className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                <p className="text-muted-foreground">No messages yet</p>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </main>
     </div>
-  );
-}
-
-// Sidebar Link Component
-function SidebarLink({ 
-  icon: Icon, 
-  label, 
-  active, 
-  count, 
-  href 
-}: { 
-  icon: any; 
-  label: string; 
-  active?: boolean; 
-  count?: number;
-  href?: string;
-}) {
-  const Component = href ? Link : "button";
-  
-  return (
-    <Component
-      to={href || "#"}
-      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-colors ${
-        active 
-          ? "bg-primary/10 text-primary" 
-          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-      }`}
-    >
-      <Icon className="w-5 h-5" />
-      <span className="flex-1">{label}</span>
-      {count !== undefined && count > 0 && (
-        <Badge variant="secondary" className="h-5 px-1.5 text-xs">
-          {count}
-        </Badge>
-      )}
-    </Component>
   );
 }

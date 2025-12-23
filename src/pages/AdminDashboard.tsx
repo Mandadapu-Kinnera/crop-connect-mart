@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -9,7 +9,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
   Leaf,
@@ -25,20 +24,68 @@ import {
   Loader2,
   LogOut,
   TrendingUp,
-  AlertCircle,
-  Eye,
 } from "lucide-react";
+
+// Mock data
+const initialFarmers = [
+  {
+    id: "1",
+    user_id: "farmer-001",
+    farm_name: "Green Valley Farm",
+    farm_size: "10 acres",
+    experience_years: 15,
+    crops_grown: ["Tomatoes", "Rice", "Wheat"],
+    approval_status: "pending",
+    created_at: new Date().toISOString(),
+    profiles: { full_name: "Ramesh Kumar", email: "ramesh@example.com" },
+  },
+  {
+    id: "2",
+    user_id: "farmer-002",
+    farm_name: "Sunrise Farms",
+    farm_size: "25 acres",
+    experience_years: 20,
+    crops_grown: ["Mangoes", "Bananas"],
+    approval_status: "approved",
+    created_at: new Date().toISOString(),
+    profiles: { full_name: "Suresh Patil", email: "suresh@example.com" },
+  },
+];
+
+const mockUsers = [
+  { id: "1", full_name: "Demo User", email: "user@agrimart.com", created_at: new Date().toISOString(), user_roles: [{ role: "user" }] },
+  { id: "2", full_name: "Demo Farmer", email: "farmer@agrimart.com", created_at: new Date().toISOString(), user_roles: [{ role: "farmer" }] },
+  { id: "3", full_name: "Admin User", email: "admin@agrimart.com", created_at: new Date().toISOString(), user_roles: [{ role: "admin" }] },
+];
+
+const mockOrders = [
+  { id: "1", order_number: "ORD-001", total_amount: 450, status: "delivered", created_at: new Date().toISOString() },
+  { id: "2", order_number: "ORD-002", total_amount: 1200, status: "pending", created_at: new Date().toISOString() },
+];
+
+function SidebarLink({ icon: Icon, label, active, count }: { icon: any; label: string; active?: boolean; count?: number }) {
+  return (
+    <div className={`flex items-center justify-between px-4 py-2.5 rounded-lg cursor-pointer transition-colors ${active ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}>
+      <div className="flex items-center gap-3">
+        <Icon className="w-5 h-5" />
+        <span className="font-medium">{label}</span>
+      </div>
+      {count !== undefined && count > 0 && (
+        <Badge variant="secondary" className="h-5 px-2">{count}</Badge>
+      )}
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
   const { user, userRole, signOut, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [farmers, setFarmers] = useState<any[]>([]);
-  const [users, setUsers] = useState<any[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
-  const [orders, setOrders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [farmers, setFarmers] = useState(initialFarmers);
+  const [users] = useState(mockUsers);
+  const [orders] = useState(mockOrders);
+  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   
   const [selectedFarmer, setSelectedFarmer] = useState<any>(null);
@@ -51,118 +98,34 @@ export default function AdminDashboard() {
     }
   }, [user, userRole, authLoading, navigate]);
 
-  useEffect(() => {
-    if (user && userRole === "admin") {
-      fetchAllData();
-    }
-  }, [user, userRole]);
-
-  const fetchAllData = async () => {
-    setLoading(true);
-    
-    // Fetch all farmer profiles with user info
-    const { data: farmersData } = await supabase
-      .from("farmer_profiles")
-      .select("*, profiles!farmer_profiles_user_id_fkey(*)")
-      .order("created_at", { ascending: false });
-    
-    if (farmersData) setFarmers(farmersData);
-    
-    // Fetch all user profiles
-    const { data: usersData } = await supabase
-      .from("profiles")
-      .select("*, user_roles(*)")
-      .order("created_at", { ascending: false });
-    
-    if (usersData) setUsers(usersData);
-    
-    // Fetch all products
-    const { data: productsData } = await supabase
-      .from("products")
-      .select("*, profiles!products_farmer_id_fkey(*)")
-      .order("created_at", { ascending: false });
-    
-    if (productsData) setProducts(productsData);
-    
-    // Fetch all orders
-    const { data: ordersData } = await supabase
-      .from("orders")
-      .select("*, order_items(*)")
-      .order("created_at", { ascending: false });
-    
-    if (ordersData) setOrders(ordersData);
-    
-    setLoading(false);
+  const handleApproveFarmer = (farmer: any) => {
+    setFarmers(farmers.map(f => 
+      f.id === farmer.id 
+        ? { ...f, approval_status: "approved" }
+        : f
+    ));
+    toast({
+      title: "Farmer Approved",
+      description: "The farmer has been approved and notified.",
+    });
   };
 
-  const handleApproveFarmer = async (farmer: any) => {
-    const { error } = await supabase
-      .from("farmer_profiles")
-      .update({
-        approval_status: "approved",
-        approved_at: new Date().toISOString(),
-        approved_by: user?.id,
-      })
-      .eq("id", farmer.id);
-    
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to approve farmer.",
-        variant: "destructive",
-      });
-    } else {
-      // Send notification to farmer
-      await supabase.from("notifications").insert({
-        user_id: farmer.user_id,
-        title: "Registration Approved!",
-        message: "Congratulations! Your farmer registration has been approved. You can now list your products on AgriMart.",
-        type: "success",
-      });
-      
-      toast({
-        title: "Farmer Approved",
-        description: "The farmer has been approved and notified.",
-      });
-      fetchAllData();
-    }
-  };
-
-  const handleRejectFarmer = async () => {
+  const handleRejectFarmer = () => {
     if (!selectedFarmer) return;
     
-    const { error } = await supabase
-      .from("farmer_profiles")
-      .update({
-        approval_status: "rejected",
-        rejection_reason: rejectionReason,
-      })
-      .eq("id", selectedFarmer.id);
+    setFarmers(farmers.map(f => 
+      f.id === selectedFarmer.id 
+        ? { ...f, approval_status: "rejected" }
+        : f
+    ));
     
-    if (error) {
-      toast({
-        title: "Error",
-        description: "Failed to reject farmer.",
-        variant: "destructive",
-      });
-    } else {
-      // Send notification to farmer
-      await supabase.from("notifications").insert({
-        user_id: selectedFarmer.user_id,
-        title: "Registration Not Approved",
-        message: `Your farmer registration was not approved. Reason: ${rejectionReason}`,
-        type: "error",
-      });
-      
-      toast({
-        title: "Farmer Rejected",
-        description: "The farmer has been notified.",
-      });
-      setRejectDialogOpen(false);
-      setSelectedFarmer(null);
-      setRejectionReason("");
-      fetchAllData();
-    }
+    toast({
+      title: "Farmer Rejected",
+      description: "The farmer has been notified.",
+    });
+    setRejectDialogOpen(false);
+    setSelectedFarmer(null);
+    setRejectionReason("");
   };
 
   const handleSignOut = async () => {
@@ -185,7 +148,7 @@ export default function AdminDashboard() {
   const totalOrders = orders.length;
   const totalRevenue = orders
     .filter((o) => o.status === "delivered")
-    .reduce((sum, o) => sum + parseFloat(o.total_amount || 0), 0);
+    .reduce((sum, o) => sum + o.total_amount, 0);
 
   const filteredFarmers = farmers.filter((farmer) => {
     const profile = farmer.profiles;
@@ -225,7 +188,7 @@ export default function AdminDashboard() {
           <SidebarLink icon={Shield} label="Dashboard" active />
           <SidebarLink icon={Sprout} label="Farmer Requests" count={pendingFarmers} />
           <SidebarLink icon={Users} label="All Users" count={totalUsers} />
-          <SidebarLink icon={Package} label="Products" count={products.length} />
+          <SidebarLink icon={Package} label="Products" />
           <SidebarLink icon={ShoppingCart} label="Orders" count={totalOrders} />
         </nav>
         
@@ -472,7 +435,7 @@ export default function AdminDashboard() {
                   {filteredUsers.map((u) => (
                     <tr key={u.id} className="border-b hover:bg-muted/50">
                       <td className="py-3 px-4 font-medium">{u.full_name}</td>
-                      <td className="py-3 px-4 text-sm">{u.email}</td>
+                      <td className="py-3 px-4 text-muted-foreground">{u.email}</td>
                       <td className="py-3 px-4">
                         <Badge variant="secondary" className="capitalize">
                           {u.user_roles?.[0]?.role || "user"}
@@ -498,36 +461,23 @@ export default function AdminDashboard() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Order #</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Amount</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Status</th>
-                      <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {orders.map((order) => (
-                      <tr key={order.id} className="border-b hover:bg-muted/50">
-                        <td className="py-3 px-4 font-medium">{order.order_number}</td>
-                        <td className="py-3 px-4">₹{order.total_amount}</td>
-                        <td className="py-3 px-4">
-                          <Badge
-                            variant={order.status === "delivered" ? "success" : "secondary"}
-                          >
-                            {order.status}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-4 text-sm text-muted-foreground">
-                          {new Date(order.created_at).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              orders.map((order) => (
+                <Card key={order.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{order.order_number}</p>
+                        <p className="text-sm text-muted-foreground">
+                          ₹{order.total_amount} • {new Date(order.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Badge variant={order.status === "delivered" ? "success" : "secondary"}>
+                        {order.status}
+                      </Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
             )}
           </TabsContent>
         </Tabs>
@@ -542,11 +492,10 @@ export default function AdminDashboard() {
           <div className="py-4">
             <Label>Reason for Rejection</Label>
             <Textarea
-              className="mt-2"
+              placeholder="Please provide a reason for rejection..."
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
-              placeholder="Please provide a reason for rejection..."
-              rows={4}
+              className="mt-2"
             />
           </div>
           <DialogFooter>
@@ -560,36 +509,5 @@ export default function AdminDashboard() {
         </DialogContent>
       </Dialog>
     </div>
-  );
-}
-
-// Sidebar Link Component
-function SidebarLink({ 
-  icon: Icon, 
-  label, 
-  active, 
-  count 
-}: { 
-  icon: any; 
-  label: string; 
-  active?: boolean; 
-  count?: number;
-}) {
-  return (
-    <button
-      className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-left transition-colors ${
-        active 
-          ? "bg-primary/10 text-primary" 
-          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-      }`}
-    >
-      <Icon className="w-5 h-5" />
-      <span className="flex-1">{label}</span>
-      {count !== undefined && count > 0 && (
-        <Badge variant="secondary" className="h-5 px-1.5 text-xs">
-          {count}
-        </Badge>
-      )}
-    </button>
   );
 }
