@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriMart Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 20px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success { border-left: 4px solid #22c55e; }
+        .error { border-left: 4px solid #ef4444; }
+        .pending { border-left: 4px solid #f59e0b; }
+        button {
+            background: #22c55e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover { background: #16a34a; }
+        pre {
+            background: #f3f4f6;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌾 AgriMart API Connection Test</h1>
+    
+    <div id="test1" class="test-box pending">
+        <h3>Test 1: Server Health Check</h3>
+        <p id="test1-status">Testing...</p>
+        <pre id="test1-result"></pre>
+    </div>
+
+    <div id="test2" class="test-box pending">
+        <h3>Test 2: Products Endpoint</h3>
+        <p id="test2-status">Testing...</p>
+        <pre id="test2-result"></pre>
+    </div>
+
+    <div id="test3" class="test-box pending">
+        <h3>Test 3: Authentication Token</h3>
+        <p id="test3-status">Checking...</p>
+        <pre id="test3-result"></pre>
+    </div>
+
+    <button onclick="runTests()">Run Tests Again</button>
+
+    <script>
+        async function runTests() {
+            // Test 1: Health Check
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/test');
+                const data = await response.json();
+                document.getElementById('test1').className = 'test-box success';
+                document.getElementById('test1-status').textContent = '✅ Success!';
+                document.getElementById('test1-result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('test1').className = 'test-box error';
+                document.getElementById('test1-status').textContent = '❌ Failed';
+                document.getElementById('test1-result').textContent = error.message;
+            }
+
+            // Test 2: Products Endpoint
+            try {
+                const response = await fetch('http://127.0.0.1:5000/api/products');
+                const data = await response.json();
+                document.getElementById('test2').className = 'test-box success';
+                document.getElementById('test2-status').textContent = `✅ Success! Found ${data.length} products`;
+                document.getElementById('test2-result').textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                document.getElementById('test2').className = 'test-box error';
+                document.getElementById('test2-status').textContent = '❌ Failed';
+                document.getElementById('test2-result').textContent = error.message;
+            }
+
+            // Test 3: Check Token
+            const token = localStorage.getItem('token');
+            if (token) {
+                document.getElementById('test3').className = 'test-box success';
+                document.getElementById('test3-status').textContent = '✅ Token Found';
+                document.getElementById('test3-result').textContent = `Token: ${token.substring(0, 50)}...`;
+            } else {
+                document.getElementById('test3').className = 'test-box error';
+                document.getElementById('test3-status').textContent = '❌ No Token - Please login first';
+                document.getElementById('test3-result').textContent = 'You need to login as a farmer to add products';
+            }
+        }
+
+        // Run tests on page load
+        runTests();
+    </script>
+</body>
+</html>
