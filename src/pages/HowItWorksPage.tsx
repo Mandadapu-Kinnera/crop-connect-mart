@@ -28,13 +28,8 @@ const steps = [
 
 const HowItWorksPage = () => {
   return (
-<<<<<<< HEAD
     <div className="min-h-screen flex flex-col bg-background pt-20">
       <Header showLinks={false} />
-=======
-    <div className="min-h-screen flex flex-col bg-background">
-      <Header />
->>>>>>> b280f82256a15bbfa9407e39e52a335cd3da42db
       <main className="flex-1">
         <section className="py-16 md:py-24 bg-gradient-to-b from-primary/5 to-background">
           <div className="container mx-auto px-4">

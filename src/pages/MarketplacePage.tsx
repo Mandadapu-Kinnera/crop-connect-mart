@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 import { useState, useEffect } from "react";
-=======
-import { useState } from "react";
->>>>>>> b280f82256a15bbfa9407e39e52a335cd3da42db
 import { Link, useNavigate } from "react-router-dom";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
@@ -12,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-<<<<<<< HEAD
 import {
   Search,
   MapPin,
@@ -20,15 +15,6 @@ import {
   Grid3X3,
   List,
   Star,
-=======
-import { 
-  Search, 
-  MapPin, 
-  Filter, 
-  Grid3X3, 
-  List, 
-  Star, 
->>>>>>> b280f82256a15bbfa9407e39e52a335cd3da42db
   ShoppingCart,
   Heart,
   Leaf,
@@ -39,21 +25,16 @@ import {
   Trash2,
   Plus,
   Minus,
-<<<<<<< HEAD
   Navigation,
   Loader2,
   Clock,
   Package,
 } from "lucide-react";
 import { useGeolocation } from "@/hooks/useGeolocation";
-=======
-} from "lucide-react";
->>>>>>> b280f82256a15bbfa9407e39e52a335cd3da42db
 import vegetablesImage from "@/assets/vegetables-basket.jpg";
 import fruitsImage from "@/assets/fruits-display.jpg";
 import riceImage from "@/assets/rice-field.jpg";
 
-<<<<<<< HEAD
 interface Product {
   _id: string;
   name: string;
@@ -73,93 +54,6 @@ const categories = ["All", "Vegetables", "Fruits", "Grains", "Dairy", "Spices", 
 
 interface CartItem {
   product: Product;
-=======
-const products = [
-  {
-    id: "1",
-    name: "Fresh Organic Tomatoes",
-    farmer: "Ramesh Kumar",
-    location: "Warangal, Telangana",
-    price: 40,
-    unit: "kg",
-    rating: 4.8,
-    reviews: 156,
-    image: vegetablesImage,
-    category: "Vegetables",
-    inStock: true,
-  },
-  {
-    id: "2",
-    name: "Alphonso Mangoes",
-    farmer: "Suresh Patil",
-    location: "Ratnagiri, Maharashtra",
-    price: 350,
-    unit: "dozen",
-    rating: 4.9,
-    reviews: 243,
-    image: fruitsImage,
-    category: "Fruits",
-    inStock: true,
-  },
-  {
-    id: "3",
-    name: "Basmati Rice (Premium)",
-    farmer: "Harpreet Singh",
-    location: "Karnal, Haryana",
-    price: 120,
-    unit: "kg",
-    rating: 4.7,
-    reviews: 89,
-    image: riceImage,
-    category: "Grains",
-    inStock: true,
-  },
-  {
-    id: "4",
-    name: "Fresh Green Chillies",
-    farmer: "Lakshmi Devi",
-    location: "Guntur, Andhra Pradesh",
-    price: 80,
-    unit: "kg",
-    rating: 4.6,
-    reviews: 67,
-    image: vegetablesImage,
-    category: "Vegetables",
-    inStock: true,
-  },
-  {
-    id: "5",
-    name: "Organic Bananas",
-    farmer: "Mohan Reddy",
-    location: "Anantapur, AP",
-    price: 60,
-    unit: "dozen",
-    rating: 4.8,
-    reviews: 124,
-    image: fruitsImage,
-    category: "Fruits",
-    inStock: false,
-  },
-  {
-    id: "6",
-    name: "Pearl Millet (Bajra)",
-    farmer: "Raju Yadav",
-    location: "Jodhpur, Rajasthan",
-    price: 45,
-    unit: "kg",
-    rating: 4.5,
-    reviews: 45,
-    image: riceImage,
-    category: "Grains",
-    inStock: true,
-  },
-];
-
-const categories = ["All", "Vegetables", "Fruits", "Grains", "Dairy", "Spices"];
-
-interface CartItem {
-  product: typeof products[0];
->>>>>>> b280f82256a15bbfa9407e39e52a335cd3da42db
   quantity: number;
 }
 
@@ -167,25 +61,18 @@ export default function MarketplacePage() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-<<<<<<< HEAD
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [showNearby, setShowNearby] = useState(false);
-=======
-  
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
->>>>>>> b280f82256a15bbfa9407e39e52a335cd3da42db
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
   const [showWishlist, setShowWishlist] = useState(false);
 
-<<<<<<< HEAD
   const { latitude, longitude, loading: locationLoading, error: locationError, getLocation, calculateDistance, hasLocation } = useGeolocation();
 
   const fetchProducts = async () => {
@@ -356,47 +243,10 @@ export default function MarketplacePage() {
   const updateCartQuantity = async (productId: string, delta: number) => {
     const newCart = cart.map(item => {
       if (item.product._id === productId) {
-=======
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.farmer.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "All" || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  const toggleWishlist = (productId: string) => {
-    if (wishlist.includes(productId)) {
-      setWishlist(wishlist.filter(id => id !== productId));
-      toast({ title: "Removed from wishlist" });
-    } else {
-      setWishlist([...wishlist, productId]);
-      toast({ title: "Added to wishlist" });
-    }
-  };
-
-  const addToCart = (product: typeof products[0]) => {
-    const existingItem = cart.find(item => item.product.id === product.id);
-    if (existingItem) {
-      setCart(cart.map(item => 
-        item.product.id === product.id 
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      ));
-    } else {
-      setCart([...cart, { product, quantity: 1 }]);
-    }
-    toast({ title: "Added to cart", description: `${product.name} added to your cart` });
-  };
-
-  const updateCartQuantity = (productId: string, delta: number) => {
-    setCart(cart.map(item => {
-      if (item.product.id === productId) {
->>>>>>> b280f82256a15bbfa9407e39e52a335cd3da42db
         const newQuantity = item.quantity + delta;
         return newQuantity > 0 ? { ...item, quantity: newQuantity } : item;
       }
       return item;
-<<<<<<< HEAD
     }).filter(item => item.quantity > 0);
 
     setCart(newCart);
@@ -408,23 +258,12 @@ export default function MarketplacePage() {
     setCart(newCart);
     toast({ title: "Removed from cart" });
     await syncCart(newCart);
-=======
-    }).filter(item => item.quantity > 0));
-  };
 
-  const removeFromCart = (productId: string) => {
-    setCart(cart.filter(item => item.product.id !== productId));
-    toast({ title: "Removed from cart" });
->>>>>>> b280f82256a15bbfa9407e39e52a335cd3da42db
   };
 
   const cartTotal = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-<<<<<<< HEAD
   const wishlistProducts = products.filter(p => wishlist.includes(p._id));
-=======
-  const wishlistProducts = products.filter(p => wishlist.includes(p.id));
->>>>>>> b280f82256a15bbfa9407e39e52a335cd3da42db
 
   const handleSignOut = async () => {
     await signOut();
@@ -456,15 +295,9 @@ export default function MarketplacePage() {
         </div>
 
         <div className="flex items-center gap-3">
-<<<<<<< HEAD
           <Button
             variant="ghost"
             size="icon"
-=======
-          <Button 
-            variant="ghost" 
-            size="icon" 
->>>>>>> b280f82256a15bbfa9407e39e52a335cd3da42db
             className="relative"
             onClick={() => { setShowWishlist(true); setShowCart(false); }}
           >
@@ -476,15 +309,9 @@ export default function MarketplacePage() {
             )}
           </Button>
 
-<<<<<<< HEAD
           <Button
             variant="ghost"
             size="icon"
-=======
-          <Button 
-            variant="ghost" 
-            size="icon" 
->>>>>>> b280f82256a15bbfa9407e39e52a335cd3da42db
             className="relative"
             onClick={() => { setShowCart(true); setShowWishlist(false); }}
           >
@@ -498,32 +325,21 @@ export default function MarketplacePage() {
 
           <Button variant="ghost" size="sm" className="gap-2">
             <User className="w-4 h-4" />
-<<<<<<< HEAD
             <span className="hidden md:inline">{user?.name || "User"}</span>
-=======
-            <span className="hidden md:inline">{user?.user_metadata?.full_name || "User"}</span>
->>>>>>> b280f82256a15bbfa9407e39e52a335cd3da42db
           </Button>
 
           <Button variant="outline" size="sm" onClick={handleSignOut}>
             <LogOut className="w-4 h-4 md:mr-2" />
             <span className="hidden md:inline">Logout</span>
           </Button>
-        </div>
-      </nav>
-    </header>
+        </div >
+      </nav >
+    </header >
   );
 
   return (
-<<<<<<< HEAD
     <div className="min-h-screen bg-background pt-20">
       {user ? <LoggedInHeader /> : <Header showLinks={false} />}
-
-=======
-    <div className="min-h-screen bg-background">
-      {user ? <LoggedInHeader /> : <Header />}
-      
->>>>>>> b280f82256a15bbfa9407e39e52a335cd3da42db
       {/* Cart Sidebar */}
       {showCart && (
         <div className="fixed inset-0 z-50 bg-black/50" onClick={() => setShowCart(false)}>
@@ -541,17 +357,12 @@ export default function MarketplacePage() {
               ) : (
                 <div className="space-y-4">
                   {cart.map((item) => (
-<<<<<<< HEAD
                     <div key={item.product._id} className="flex gap-4 p-3 border rounded-lg">
-=======
-                    <div key={item.product.id} className="flex gap-4 p-3 border rounded-lg">
->>>>>>> b280f82256a15bbfa9407e39e52a335cd3da42db
                       <img src={item.product.image} alt={item.product.name} className="w-16 h-16 object-cover rounded" />
                       <div className="flex-1">
                         <h3 className="font-medium">{item.product.name}</h3>
                         <p className="text-sm text-muted-foreground">₹{item.product.price}/{item.product.unit}</p>
                         <div className="flex items-center gap-2 mt-2">
-<<<<<<< HEAD
                           <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateCartQuantity(item.product._id, -1)}>
                             <Minus className="w-3 h-3" />
                           </Button>
@@ -560,16 +371,6 @@ export default function MarketplacePage() {
                             <Plus className="w-3 h-3" />
                           </Button>
                           <Button variant="ghost" size="icon" className="h-7 w-7 ml-auto text-destructive" onClick={() => removeFromCart(item.product._id)}>
-=======
-                          <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateCartQuantity(item.product.id, -1)}>
-                            <Minus className="w-3 h-3" />
-                          </Button>
-                          <span className="w-8 text-center">{item.quantity}</span>
-                          <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateCartQuantity(item.product.id, 1)}>
-                            <Plus className="w-3 h-3" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 ml-auto text-destructive" onClick={() => removeFromCart(item.product.id)}>
->>>>>>> b280f82256a15bbfa9407e39e52a335cd3da42db
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
@@ -609,22 +410,14 @@ export default function MarketplacePage() {
               ) : (
                 <div className="space-y-4">
                   {wishlistProducts.map((product) => (
-<<<<<<< HEAD
                     <div key={product._id} className="flex gap-4 p-3 border rounded-lg">
-=======
-                    <div key={product.id} className="flex gap-4 p-3 border rounded-lg">
->>>>>>> b280f82256a15bbfa9407e39e52a335cd3da42db
                       <img src={product.image} alt={product.name} className="w-16 h-16 object-cover rounded" />
                       <div className="flex-1">
                         <h3 className="font-medium">{product.name}</h3>
                         <p className="text-sm text-muted-foreground">₹{product.price}/{product.unit}</p>
                         <div className="flex gap-2 mt-2">
                           <Button size="sm" onClick={() => addToCart(product)}>Add to Cart</Button>
-<<<<<<< HEAD
                           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => toggleWishlist(product._id)}>
-=======
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => toggleWishlist(product.id)}>
->>>>>>> b280f82256a15bbfa9407e39e52a335cd3da42db
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
@@ -637,11 +430,7 @@ export default function MarketplacePage() {
           </div>
         </div>
       )}
-<<<<<<< HEAD
 
-=======
-      
->>>>>>> b280f82256a15bbfa9407e39e52a335cd3da42db
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-4 lg:px-8">
           {/* Page Header */}
@@ -669,7 +458,6 @@ export default function MarketplacePage() {
             </div>
 
             {/* Location Filter */}
-<<<<<<< HEAD
             <Button
               variant={showNearby ? "default" : "outline"}
               className="h-12 gap-2"
@@ -681,10 +469,7 @@ export default function MarketplacePage() {
               ) : (
                 <Navigation className="w-4 h-4" />
               )}
-=======
-            <Button variant="outline" className="h-12 gap-2">
-              <MapPin className="w-4 h-4" />
->>>>>>> b280f82256a15bbfa9407e39e52a335cd3da42db
+
               Near Me
             </Button>
 
@@ -726,7 +511,6 @@ export default function MarketplacePage() {
           </div>
 
           {/* Products Grid */}
-<<<<<<< HEAD
           {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
               <Loader2 className="w-10 h-10 animate-spin text-primary" />
@@ -807,71 +591,13 @@ export default function MarketplacePage() {
               ))}
             </div>
           )}
-=======
-          <div className={`grid gap-6 ${viewMode === "grid" ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" : "grid-cols-1"}`}>
-            {filteredProducts.map((product) => (
-              <Card key={product.id} variant="elevated" className="overflow-hidden group">
-                <div className="relative">
-                  <img
-                    src={product.image}
-                    alt={product.name}
-                    className="w-full h-48 object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                  <button 
-                    className={`absolute top-3 right-3 w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm flex items-center justify-center hover:bg-background transition-colors ${wishlist.includes(product.id) ? "text-destructive" : ""}`}
-                    onClick={() => toggleWishlist(product.id)}
-                  >
-                    <Heart className={`w-4 h-4 ${wishlist.includes(product.id) ? "fill-current" : ""}`} />
-                  </button>
-                  {!product.inStock && (
-                    <div className="absolute inset-0 bg-foreground/50 flex items-center justify-center">
-                      <Badge variant="secondary">Out of Stock</Badge>
-                    </div>
-                  )}
-                  <Badge className="absolute bottom-3 left-3" variant="accent">
-                    {product.category}
-                  </Badge>
-                </div>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-1 mb-2">
-                    <Star className="w-4 h-4 fill-warning text-warning" />
-                    <span className="text-sm font-medium">{product.rating}</span>
-                    <span className="text-sm text-muted-foreground">({product.reviews})</span>
-                  </div>
-                  <h3 className="font-semibold mb-1 group-hover:text-primary transition-colors">
-                    {product.name}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-1">{product.farmer}</p>
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
-                    <MapPin className="w-3 h-3" />
-                    {product.location}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-2xl font-bold text-primary">₹{product.price}</span>
-                      <span className="text-sm text-muted-foreground">/{product.unit}</span>
-                    </div>
-                    <Button size="sm" disabled={!product.inStock} onClick={() => product.inStock && addToCart(product)}>
-                      <ShoppingCart className="w-4 h-4 mr-1" />
-                      Add
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
->>>>>>> b280f82256a15bbfa9407e39e52a335cd3da42db
 
           {/* Empty State */}
           {filteredProducts.length === 0 && (
             <div className="text-center py-16">
-<<<<<<< HEAD
               <p className="text-muted-foreground text-lg">
                 {showNearby ? "No fresh produce found within 10km." : "No products found matching your criteria."}
               </p>
-=======
-              <p className="text-muted-foreground text-lg">No products found matching your criteria.</p>
->>>>>>> b280f82256a15bbfa9407e39e52a335cd3da42db
               <Button variant="outline" className="mt-4" onClick={() => {
                 setSearchQuery("");
                 setSelectedCategory("All");
